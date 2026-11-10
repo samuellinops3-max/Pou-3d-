@@ -1,0 +1,20 @@
+name: Compilar Pou PS3
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: image: ps3dev/ps3dev:latest # Ambiente oficial de desenvolvimento do PS3
+    steps:
+      - name: Pegar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Compilar o jogo
+        run: make
+
+      - name: Salvar arquivo gerado
+        uses: actions/upload-artifact@v4
+        with:
+          name: PouPS3-Binario
+          path: PouPS3.elf
