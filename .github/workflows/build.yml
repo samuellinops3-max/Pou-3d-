@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ps3dev/psl1ght:latest
+    container: ghcr.io/ps3dev/psl1ght:latest
     steps:
       - uses: actions/checkout@v4
       - name: Compilar_Jogo
