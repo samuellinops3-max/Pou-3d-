@@ -22,33 +22,20 @@ jobs:
       - name: Configurar PSL1GHT / Toolchain PS3
         run: |
           set -e
-          echo "A clonar o ps3toolchain..."
           git clone https://github.com/ps3dev/ps3toolchain.git /tmp/ps3toolchain
           cd /tmp/ps3toolchain
-          # Executa o script ignorando erros menores se houver e garantindo o fluxo
           ./toolchain.sh || true
 
       - name: Compilar o Jogo
         run: |
           export PS3DEV=/usr/local/ps3dev
           export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin
-          
-          # Verifica se o diretório existe antes de compilar
-          if [ -d "$PS3DEV" ]; then
-            make
-          else
-            echo "Toolchain não encontrada no caminho padrão, ajustando..."
-            make || echo "Aviso na compilação do make."
-          fi
+          make
 
-      - name: Gerar o Pacote PKG
-        run: |
-          echo "Processo concluído."
-
-      - name: Fazer Upload do Arquivo PKG
+      - name: Fazer Upload do Arquivo Gerado
         uses: actions/upload-artifact@v4
         with:
-          name: Pou-PS3-Pkg
+          name: Pou-PS3-Binario
           path: |
-            *.pkg
             *.elf
+            *.pkg
