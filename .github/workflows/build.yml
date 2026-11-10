@@ -1,30 +1,34 @@
-name: Gerar PKG do Pou PS3
+name: Build Pou PS3 PKG
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: image: ps3dev/ps3dev:latest
+    container:
+      image: ps3dev/ps3toolchain:latest
     steps:
-      - name: Baixar código do repositório
-        uses: actions/checkout@v4
-
-      - name: Compilar o jogo
+      - uses: actions/checkout@v4
+      - name: Build EBOOT
         run: |
+          export PSL1GHT=/psl1ght
+          export PATH=$PSL1GHT/ppu/bin:$PATH
           make
-
-      - name: Criar estrutura do PKG
+          ls -lh
+      - name: Gerar PARAM.SFO e PKG
         run: |
-          # Cria uma pasta temporária para montar o pacote do PS3
-          mkdir -p pkg_root
-          # Copia o binário compilado para a pasta do pacote (renomeado para EBOOT.BIN)
-          # Nota: Para rodar de verdade no PS3, o elf precisa ser convertido para self, 
-          # mas por enquanto vamos garantir que o arquivo final seja gerado no Actions.
-          cp PouPS3.elf pkg_root/EBOOT.BIN
-
-      - name: Salvar o arquivo gerado
+          export PSL1GHT=/psl1ght
+          export PATH=$PSL1GHT/ppu/bin:$PATH
+          sfo.py --title "POU PS3 BR" --appid POUBR001 PARAM.SFO || make_sfo --title "POU PS3 BR" PARAM.SFO
+          # Gera ICON0.PNG simples
+          python3 -c "from PIL import Image, ImageDraw; img=Image.new('RGB',(320,176),(135,206,235)); d=ImageDraw.Draw(img); d.ellipse([110,30,210,130],fill=(198,142,95),outline=(0,0,0)); img.save('ICON0.PNG')"
+          make_package_npdrm --contentid UP0001-POUBR001_00-POUBR00000000001 POUBR001.pkg PARAM.SFO POUBR001.self ICON0.PNG || sprxlinker POUBR001.pkg PARAM.SFO POUBR001.self
+          ls -lh *.pkg
+      - name: Upload PKG
         uses: actions/upload-artifact@v4
         with:
-          name: PouPS3-PKG
-          path: pkg_root/
+          name: pou-ps3-pkg
+          path: "*.pkg"
