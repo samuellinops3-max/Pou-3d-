@@ -1,6 +1,5 @@
-# Makefile Pou PS3 BR
 ifeq ($(strip $(PSL1GHT)),)
-$(error "PSL1GHT nao definido. Rode no docker ps3dev/ps3toolchain")
+$(error "Please set PSL1GHT in your environment. export PSL1GHT=<path>")
 endif
 
 include $(PSL1GHT)/ppu_rules
@@ -10,37 +9,41 @@ APPID		:= POUBR001
 CONTENTID	:= UP0001-POUBR001_00-POUBR00000000001
 
 TARGET		:= $(APPID)
-BUILD		:= build
-SOURCES		:= .
-INCLUDES	:= .
 
 CFILES		:= $(foreach dir,$(SOURCES), $(notdir $(wildcard $(dir)/*.c)))
+CFILES		:= main.c
 OFILES		:= $(CFILES:.c=.o)
 
 INCLUDE		:= $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-				-I$(PSL1GHT)/ppu/include \
-				-I$(PORTLIBS)/include
+			-I$(PSL1GHT)/ppu/include -I$(PORTLIBS)/include
 
 LIBDIRS		:= -L$(PSL1GHT)/ppu/lib -L$(PORTLIBS)/lib
+
 LIBS		:= -ltiny3d -lrsx -lgcm_sys -lsysutil -lio -lsysmodule -lm
 
 CFLAGS		:= -O2 -Wall -mcpu=cell $(INCLUDE)
+CXXFLAGS	:= $(CFLAGS)
+
 LDFLAGS		:= $(LIBDIRS) $(LIBS)
 
-all: $(TARGET).elf $(TARGET).self
+SFOXML		:= sfo.xml
+ICON0		:= ICON0.PNG
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+all: $(TARGET).pkg
 
-$(TARGET).elf: $(OFILES)
-	$(CC) $^ $(LDFLAGS) -o $@
+$(TARGET).pkg: $(TARGET).self $(SFOXML) $(ICON0)
+	$(PKG) --contentid $(CONTENTID) $(TARGET).pkg $(SFOXML) $(ICON0) $(TARGET).self
 
 $(TARGET).self: $(TARGET).elf
 	$(SELF) $< $@
 
-clean:
-	rm -f $(OFILES) $(TARGET).elf $(TARGET).self
+$(TARGET).elf: $(OFILES)
+	$(CC) $^ $(LDFLAGS) -o $@
 
-pkg: $(TARGET).self
-	$(SFO) --title "$(TITLE)" --appid "$(APPID)" PARAM.SFO
-	$(PKG) --contentid $(CONTENTID) $(APPID).pkg PARAM.SFO $(TARGET).self
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OFILES) $(TARGET).elf $(TARGET).self $(TARGET).pkg
+
+.PHONY: all clean
