@@ -1,20 +1,30 @@
-name: Compilar Pou PS3
+name: Gerar PKG do Pou PS3
 
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: image: ps3dev/ps3dev:latest # Ambiente oficial de desenvolvimento do PS3
+    container: image: ps3dev/ps3dev:latest
     steps:
-      - name: Pegar código do repositório
+      - name: Baixar código do repositório
         uses: actions/checkout@v4
 
       - name: Compilar o jogo
-        run: make
+        run: |
+          make
 
-      - name: Salvar arquivo gerado
+      - name: Criar estrutura do PKG
+        run: |
+          # Cria uma pasta temporária para montar o pacote do PS3
+          mkdir -p pkg_root
+          # Copia o binário compilado para a pasta do pacote (renomeado para EBOOT.BIN)
+          # Nota: Para rodar de verdade no PS3, o elf precisa ser convertido para self, 
+          # mas por enquanto vamos garantir que o arquivo final seja gerado no Actions.
+          cp PouPS3.elf pkg_root/EBOOT.BIN
+
+      - name: Salvar o arquivo gerado
         uses: actions/upload-artifact@v4
         with:
-          name: PouPS3-Binario
-          path: PouPS3.elf
+          name: PouPS3-PKG
+          path: pkg_root/
