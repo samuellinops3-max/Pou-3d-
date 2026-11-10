@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sfo>
+  <param key="TITLE" value="POU PS3 BR"/>
+  <param key="TITLE_ID" value="POUBR001"/>
+  <param key="CATEGORY" value="HG"/>
+  <param key="APP_VER" value="01.00"/>
+  <param key="VERSION" value="01.00"/>
+  <param key="PARENTAL_LEVEL" value="1"/>
+  <param key="BOOTABLE" value="1"/>
+</sfo>
