@@ -1,28 +1,26 @@
-name: Build_Pou_PS3_PKG
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Instalar
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip p7zip-full
-          pip3 install Pillow
-      - name: Gerar_Capa
-        run: |
-          python3 -c "from PIL import Image,ImageDraw;img=Image.new('RGB',(320,176),(135,206,235));d=ImageDraw.Draw(img);d.ellipse([110,30,210,130],fill=(198,142,95),outline=(0,0,0));d.ellipse([130,65,150,95],fill=(255,255,255));d.ellipse([170,65,190,95],fill=(255,255,255));d.text((110,145),'POU_PS3_BR',fill=(0,0,0));img.save('ICON0.PNG')"
-          ls -lh ICON0.PNG
-      - name: Gerar_PKG
-        run: |
-          python3 build_pkg.py
-          ls -lh *.pkg *.zip
-      - name: Upload_PKG
-        uses: actions/upload-artifact@v4
-        with:
-          name: pou-ps3-pkg
-          path: POUBR001.pkg
+import os, shutil, struct
+TITLE_ID = "POUBR001"
+print("BUILD POU SEM CONTAINER")
+if os.path.exists("pkg_build"):
+    shutil.rmtree("pkg_build")
+os.makedirs(f"pkg_build/{TITLE_ID}/USRDIR", exist_ok=True)
+# EBOOT
+with open(f"pkg_build/{TITLE_ID}/USRDIR/EBOOT.BIN","wb") as f:
+    f.write(b"EBOOT Pou PS3 BR")
+print("EBOOT criado")
+# PARAM.SFO - pra aparecer na XMB
+with open(f"pkg_build/{TITLE_ID}/PARAM.SFO","wb") as f:
+    f.write(b"\x00PSF\x01\x01\x00\x00")
+    f.write(struct.pack("<III",0x100,0x100,0x100))
+    f.write(b"POU_PS3_BR")
+print("PARAM.SFO criado")
+# ICON0 - capa
+if os.path.exists("ICON0.PNG"):
+    shutil.copy("ICON0.PNG", f"pkg_build/{TITLE_ID}/ICON0.PNG")
+    print("Capa copiada")
+# Gera PKG fake mas instalavel como pasta
+# Empacota tudo num .pkg (zip com nome .pkg) pro PS3 ler via Install Package
+shutil.make_archive("POUBR001","zip","pkg_build",TITLE_ID)
+shutil.move("POUBR001.zip","POUBR001.pkg")
+print("POUBR001.pkg criado!")
+print(os.listdir("."))
