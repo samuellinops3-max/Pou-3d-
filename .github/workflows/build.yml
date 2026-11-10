@@ -1,49 +1,25 @@
-name: Build Pou PS3 PKG
-
+name: Build_Pou_PS3_PKG
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ps3dev/ps3toolchain:latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Instalar dependências
+      - name: Gerar_Capa
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip p7zip-full wget git make
-          pip3 install Pillow
-
-      - name: Baixar PSL1GHT pronto
+          python3 -c "from PIL import Image,ImageDraw;img=Image.new('RGB',(320,176),(135,206,235));d=ImageDraw.Draw(img);d.ellipse([110,30,210,130],fill=(198,142,95),outline=(0,0,0));d.ellipse([130,65,150,95],fill=(255,255,255));d.ellipse([170,65,190,95],fill=(255,255,255));d.text((110,145),'POU_PS3_BR',fill=(0,0,0));img.save('ICON0.PNG')"
+          ls -lh ICON0.PNG
+      - name: Build_PKG
         run: |
-          wget -q https://github.com/ps3dev/psl1ght/releases/download/v2.0.0/psl1ght-ppu.tar.gz -O psl1ght.tar.gz || echo "tentando outro link"
-          mkdir -p /tmp/psl1ght
-          tar -xzf psl1ght.tar.gz -C /tmp/psl1ght || echo "extraiu"
-          ls /tmp/psl1ght
-          echo "PSL1GHT=/tmp/psl1ght" >> $GITHUB_ENV
-          echo "/tmp/psl1ght/ppu/bin" >> $GITHUB_PATH
-
-      - name: Build EBOOT
-        run: |
-          export PSL1GHT=/tmp/psl1ght
-          export PATH=$PSL1GHT/ppu/bin:$PATH
-          make || echo "make falhou, usando EBOOT de backup"
-          ls -lh
-
-      - name: Gerar PKG
-        run: |
-          python3 build_pkg.py
-          ls -lh *.zip *.pkg || true
-          7z a pou-ps3-pkg.zip pkg_build || true
-
-      - name: Upload PKG
+          make pkg
+          ls -lh *.pkg
+      - name: Upload_PKG
         uses: actions/upload-artifact@v4
         with:
           name: pou-ps3-pkg
-          path: |
-            *.zip
-            *.pkg
-            pkg_build/
+          path: POUBR001.pkg
