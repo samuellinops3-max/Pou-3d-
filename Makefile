@@ -1,28 +1,28 @@
-ifeq ($(strip $(PSL1GHT)),)
-$(error "Please set PSL1GHT in your environment. export PSL1GHT=<path>")
-endif
-include $(PSL1GHT)/ppu_rules
-TITLE:=POU_PS3_BR
-APPID:=POUBR001
-CONTENTID:=UP0001-POUBR001_00-POUBR00000000001
-TARGET:=$(APPID)
-CFILES:=main.c
-OFILES:=$(CFILES:.c=.o)
-INCLUDE:=-I$(CURDIR) -I$(PSL1GHT)/ppu/include -I$(PORTLIBS)/include
-LIBDIRS:=-L$(PSL1GHT)/ppu/lib -L$(PORTLIBS)/lib
-LIBS:=-ltiny3d -lrsx -lgcm_sys -lsysutil -lio -lsysmodule -lm
-CFLAGS:=-O2 -Wall -mcpu=cell $(INCLUDE)
-LDFLAGS:=$(LIBDIRS) $(LIBS)
-SFOXML:=sfo.xml
-ICON0:=ICON0.PNG
-all:$(TARGET).pkg
-$(TARGET).pkg:$(TARGET).self $(SFOXML) $(ICON0)
-	$(PKG) --contentid $(CONTENTID) $(TARGET).pkg $(SFOXML) $(ICON0) $(TARGET).self
-$(TARGET).self:$(TARGET).elf
-	$(SELF) $< $@
-$(TARGET).elf:$(OFILES)
-	$(CC) $^ $(LDFLAGS) -o $@
-%.o:%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-clean:
-	rm -f $(OFILES) $(TARGET).elf $(TARGET).self $(TARGET).pkg
+name: Build_Pou_PS3_PKG
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip p7zip-full
+          pip3 install Pillow
+      - name: Gerar_Capa
+        run: |
+          python3 -c "from PIL import Image,ImageDraw;img=Image.new('RGB',(320,176),(135,206,235));d=ImageDraw.Draw(img);d.ellipse([110,30,210,130],fill=(198,142,95),outline=(0,0,0));d.ellipse([130,65,150,95],fill=(255,255,255));d.ellipse([170,65,190,95],fill=(255,255,255));d.text((110,145),'POU_PS3_BR',fill=(0,0,0));img.save('ICON0.PNG')"
+          ls -lh ICON0.PNG
+      - name: Gerar_PKG
+        run: |
+          python3 build_pkg.py
+          ls -lh *.pkg *.zip
+      - name: Upload_PKG
+        uses: actions/upload-artifact@v4
+        with:
+          name: pou-ps3-pkg
+          path: POUBR001.pkg
