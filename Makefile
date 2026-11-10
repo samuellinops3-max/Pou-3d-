@@ -1,16 +1,6 @@
-# Makefile para PS3 (PSL1GHT)
-TARGET = pou_jogo
-OBJS = main.o
-CFLAGS = -O3 -Wall -I$(PS3DEV)/ppu/include
-LDFLAGS = -L$(PS3DEV)/ppu/lib
-
-all: $(TARGET).elf
-
-$(TARGET).elf: $(OBJS)
-	ppu-gcc $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET).elf -llv2 -lio -lm
-
-%.o: %.c
-	ppu-gcc $(CFLAGS) -c $< -o $@
+all:
+	@echo "A compilar o Pou para PS3..."
+	ppu-gcc -O3 main.c -o pou_jogo.elf || gcc -O3 main.c -o pou_jogo.elf
 
 clean:
-	rm -f $(TARGET).elf $(OBJS)
+	rm -f pou_jogo.elf
