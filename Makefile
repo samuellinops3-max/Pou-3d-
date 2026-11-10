@@ -1,10 +1,16 @@
-# Makefile básico para PSL1GHT (PS3)
-target := pou_jogo
+# Makefile para PS3 (PSL1GHT)
+TARGET = pou_jogo
+OBJS = main.o
+CFLAGS = -O3 -Wall -I$(PS3DEV)/ppu/include
+LDFLAGS = -L$(PS3DEV)/ppu/lib
 
-all: $(target).elf
+all: $(TARGET).elf
 
-$(target).elf: main.c
-	ppu-gcc -O3 main.c -o $(target).elf -llv2 -lio -lgfx -lm
+$(TARGET).elf: $(OBJS)
+	ppu-gcc $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET).elf -llv2 -lio -lm
+
+%.o: %.c
+	ppu-gcc $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(target).elf
+	rm -f $(TARGET).elf $(OBJS)
