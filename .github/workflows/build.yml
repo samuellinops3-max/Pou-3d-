@@ -9,57 +9,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: ps3dev/ps3dev:latest
 
     steps:
       - name: Checkout do Codigo
         uses: actions/checkout@v4
 
-      - name: Fabricar PKG Nativo do Pou
+      - name: Compilar Jogo e Gerar PKG Oficial
         run: |
-          python3 - << 'EOF'
-          import os
-          import struct
-
-          # 1. Cria a Identidade do Pou que aparece na XMB
-          sfo_header = b"\x00PSF\x01\x01\x00\x00\x1c\x00\x00\x00\x5c\x00\x00\x00\x02\x00\x00\x00"
-          sfo_table = struct.pack("<HHHHII", 0x00, 0x04, 0x04, 0x0c, 0x0c, 0x18)
-          sfo_keys = b"APP_VER\x00TITLE\x00TITLE_ID\x00"
-          sfo_values = b"01.00\x00\x00Pou PS3 Nativo\x00\x00POU000001\x00\x00"
-          param_sfo = sfo_header + sfo_table + sfo_keys + sfo_values
-
-          # 2. Pega os dados do main.c do Pou
-          eboot_data = b""
-          if os.path.exists("main.c"):
-              with open("main.c", "rb") as f:
-                  eboot_data = f.read()
-          else:
-              eboot_data = b"Motor Basico do Pou Actived"
-
-          # 3. Cabeçalho de Pacote Livre do HEN
-          pkg_header = bytearray(128)
-          struct.pack_into(">4s", pkg_header, 0, b"\x7fPKG")
-          struct.pack_into(">I", pkg_header, 4, 0x00000001)  # Modo de instalacao rapida
-          struct.pack_into(">I", pkg_header, 12, 0x00000080) # Offset dos arquivos
-          
-          content_id = b"UP0001-POU000001_00-0000000000000000"
-          pkg_header[48:48+len(content_id)] = content_id
-
-          # 4. Cospe o arquivo final do Pou blindado contra erro
-          with open("pou_jogo_oficial.pkg", "wb") as f:
-              f.write(pkg_header)
-              f.write(param_sfo)
-              f.write(eboot_data)
-              
-              # Alinhamento perfeito de 2MB estável
-              tamanho_atual = f.tell()
-              padding_necessario = max(0, (2 * 1024 * 1024) - tamanho_atual)
-              f.write(b"\x00" * padding_necessario)
-
-          print("Fábrica do Pou gerou o pacote!")
-          EOF
+          # Executa o Makefile que criamos para compilar o main.c e gerar o PKG automaticamente
+          make
 
       - name: Fazer Upload do PKG Oficial do Pou
         uses: actions/upload-artifact@v4
         with:
-          name: Pou-PS3-Instancia-PKG
+          name: Pou-PS3-PKG-Pronto
           path: pou_jogo_oficial.pkg
