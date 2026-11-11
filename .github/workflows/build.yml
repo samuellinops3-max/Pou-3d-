@@ -17,8 +17,38 @@ jobs:
 
       - name: Compilar Jogo e Gerar PKG Oficial
         run: |
-          # Executa o Makefile que criamos para compilar o main.c e gerar o PKG automaticamente
-          make
+          # 1. Força a exportação de todas as variáveis do SDK do PS3 no shell do Actions
+          export PS3DEV=/usr/local/ps3dev
+          export PSL1GHT=$PS3DEV/psl1ght
+          export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin:$PS3DEV/spu/bin
+
+          echo "==> Verificando ferramentas..."
+          ppu-gcc --version
+
+          echo "==> Compilando o main.c para PS3 (PPU)..."
+          ppu-gcc -O2 -Wall main.c -o pou.elf -lrt -lvb -lpsl1ght
+
+          echo "==> Convertendo ELF para EBOOT.BIN executável..."
+          fself pou.elf EBOOT.BIN
+
+          echo "==> Estruturando diretórios do pacote..."
+          mkdir -p pkg_dir
+          mv EBOOT.BIN pkg_dir/
+          
+          # Se o ICON0.PNG estiver na raiz, move para o pacote
+          if [ -f "ICON0.PNG" ]; then
+            cp ICON0.PNG pkg_dir/
+          fi
+
+          echo "==> Criando metadados do jogo (PARAM.SFO)..."
+          $PS3DEV/bin/sfo.py --title "Pou PS3 Nativo" --appid "POU000001" --type "HG" pkg_dir/PARAM.SFO
+
+          echo "==> Empacotando tudo no formato final .pkg do PS3..."
+          # Content ID padrão para homebrews livres no PS3 HEN/CFW
+          pkg_content_id="UP0001-POU000001_00-0000000000000000"
+          make_package --contentid $pkg_content_id pkg_dir/ pou_jogo_oficial.pkg
+
+          echo "==> Tudo pronto!"
 
       - name: Fazer Upload do PKG Oficial do Pou
         uses: actions/upload-artifact@v4
