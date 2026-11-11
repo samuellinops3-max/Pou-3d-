@@ -9,25 +9,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: bucanero/ps3dev:latest
 
     steps:
       - name: Checkout do Codigo
         uses: actions/checkout@v4
 
-      - name: Instalar SDK do PS3
-        run: |
-          # Baixa o compilador portatil oficial de PS3 (PSL1GHT) sem quebrar o Ubuntu
-          wget https://github.com
-          tar -xzf ps3dev-ubuntu-22.04.tar.gz -C /
-          echo "PS3DEV=/usr/local/ps3dev" >> $GITHUB_ENV
-          echo "PATH=/usr/local/ps3dev/bin:/usr/local/ps3dev/ppu/bin:$PATH" >> $GITHUB_ENV
-
       - name: Compilar e Empacotar Flappy Bird Real
         run: |
-          # Cria a estrutura de pastas oficiais do PS3
           mkdir -p pkg/USRDIR
           
-          # Cria os metadados legitimos da XMB
           cat << 'EOF' > sfo.xml
           <?xml id="1.0" encoding="utf-8"?>
           <titleid>
@@ -35,16 +27,10 @@ jobs:
           </titleid>
           EOF
           
-          /usr/local/ps3dev/bin/mksfoex -f sfo.xml pkg/PARAM.SFO
-
-          # Compila o main.c gerando o binario real para o processador do PS3
-          /usr/local/ps3dev/ppu/bin/ppu-gcc -O2 main.c -o pkg/USRDIR/EBOOT.BIN -lrt -lvsh -lnet -lio
-
-          # Copia a foto icon0.png que voce enviou para dentro do pacote
-          if [ -f icon0.png ]; then cp icon0.png pkg/icon0.png; fi
-
-          # Cria o PKG assinado de verdade (com tamanho real)
-          /usr/local/ps3dev/bin/make_package_npdrm pkg/ flappy_bird_oficial.pkg
+          mksfoex -f sfo.xml pkg/PARAM.SFO
+          ppu-gcc -O2 main.c -o pkg/USRDIR/EBOOT.BIN
+          if [ -f icon0.png ]; then cp icon0.png pkg/pkg_icon0.png; fi
+          make_package_npdrm pkg/ flappy_bird_oficial.pkg
 
       - name: Fazer Upload do PKG Legitimo
         uses: actions/upload-artifact@v4
