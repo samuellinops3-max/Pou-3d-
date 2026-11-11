@@ -1,0 +1,17 @@
+# Nome do arquivo PKG final e ID do jogo na XMB do PS3
+TARGET		:=	pou_jogo_oficial
+TITLE		:=	Pou PS3 Nativo
+APPID		:=	POU000001
+
+# Configurações do Compilador do PS3
+include $(PS3DEV)/psl1ght/Makefile.base
+
+# Arquivos de imagem obrigatórios (ele vai puxar o seu ICON0.PNG automaticamente)
+PKG_FILES	:=	$(BUILDDIR)/EBOOT.BIN ICON0.PNG
+
+clean:
+	@echo "Limpando arquivos antigos..."
+	rm -rf $(BUILDDIR) *.elf *.pkg *.bup
+
+# Regra principal de compilação
+include $(PS3DEV)/psl1ght/Makefile.elf
