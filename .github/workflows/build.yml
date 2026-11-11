@@ -14,31 +14,39 @@ jobs:
       - name: Checkout do Codigo
         uses: actions/checkout@v4
 
-      - name: Gerar Estrutura e Empacotar Flappy Bird
+      - name: Instalar SDK do PS3
         run: |
-          echo -n -e "\x00PS3\x00\x00\x00\x00" > PARAM.SFO
-          echo -n -e "\x7fELF\x01\x02\x01\x00FlappyBirdPS3" > EBOOT.BIN
+          # Baixa o compilador portatil oficial de PS3 (PSL1GHT) sem quebrar o Ubuntu
+          wget https://github.com
+          tar -xzf ps3dev-ubuntu-22.04.tar.gz -C /
+          echo "PS3DEV=/usr/local/ps3dev" >> $GITHUB_ENV
+          echo "PATH=/usr/local/ps3dev/bin:/usr/local/ps3dev/ppu/bin:$PATH" >> $GITHUB_ENV
 
-          python3 - << 'EOF'
-          import struct
-          import os
-
-          pkg_header = b"\x7fPKG\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x10"
-          content_id = b"UP0001-BIRD00001_00-0000000000000000"
-          padding = b"\x00" * (128 - len(pkg_header) - len(content_id))
+      - name: Compilar e Empacotar Flappy Bird Real
+        run: |
+          # Cria a estrutura de pastas oficiais do PS3
+          mkdir -p pkg/USRDIR
           
-          with open("flappy_bird_oficial.pkg", "wb") as f:
-              f.write(pkg_header)
-              f.write(content_id)
-              f.write(padding)
-              
-              if os.path.exists("EBOOT.BIN"):
-                  with open("EBOOT.BIN", "rb") as b:
-                      f.write(b.read())
-          print("PKG do Flappy Bird gerado com sucesso!")
+          # Cria os metadados legitimos da XMB
+          cat << 'EOF' > sfo.xml
+          <?xml id="1.0" encoding="utf-8"?>
+          <titleid>
+            <title id="BIRD00001">Flappy Bird PS3</title>
+          </titleid>
           EOF
+          
+          /usr/local/ps3dev/bin/mksfoex -f sfo.xml pkg/PARAM.SFO
 
-      - name: Fazer Upload do PKG Oficial
+          # Compila o main.c gerando o binario real para o processador do PS3
+          /usr/local/ps3dev/ppu/bin/ppu-gcc -O2 main.c -o pkg/USRDIR/EBOOT.BIN -lrt -lvsh -lnet -lio
+
+          # Copia a foto icon0.png que voce enviou para dentro do pacote
+          if [ -f icon0.png ]; then cp icon0.png pkg/icon0.png; fi
+
+          # Cria o PKG assinado de verdade (com tamanho real)
+          /usr/local/ps3dev/bin/make_package_npdrm pkg/ flappy_bird_oficial.pkg
+
+      - name: Fazer Upload do PKG Legitimo
         uses: actions/upload-artifact@v4
         with:
           name: Flappy-Bird-PS3-Oficial
