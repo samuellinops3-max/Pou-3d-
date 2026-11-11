@@ -1,0 +1,61 @@
+name: Build Pou Jogo PS3 PKG Real
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Usa o ambiente oficial de desenvolvimento do PS3 (PSL1GHT)
+    container:
+      image: ps3dev/ps3dev:latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Criar arquivos de configuração do PS3
+        run: |
+          # 1. Cria a identidade do Pou que vai aparecer na XMB do PS3
+          cat << 'EOF' > sfo.xml
+          <?xml id="1.0" encoding="utf-8"?>
+          <titleid>
+            <title id="POU000001">Pou PS3 Nativo</title>
+          </titleid>
+          EOF
+
+          # 2. Cria o script de compilação real para o processador do PS3
+          cat << 'EOF' > Makefile
+          TARGET		:=	pou_ps3
+          TITLE_ID	:=	POU000001
+          VERSION		:=	01.00
+          CFILES		:=	main.c
+
+          include $(PS3DEV)/make/ps3.mk
+
+          pkg: $(TARGET).elf
+          	@echo "Gerando PARAM.SFO legítimo..."
+          	$(SFO) -f sfo.xml PARAM.SFO
+          	@echo "Estruturando pastas internas do PKG..."
+          	mkdir -p pkg/USRDIR
+          	cp $(TARGET).elf pkg/USRDIR/EBOOT.BIN
+          	cp PARAM.SFO pkg/PARAM.SFO
+          	if [ -f icon0.png ]; then cp icon0.png pkg/icon0.png; fi
+          	@echo "Criptografando e gerando o PKG oficial assinado para o PS3..."
+          	$(PKG) --contentid UP0001-$(TITLE_ID)_00-0000000000000000 pkg/ pou_jogo_oficial.pkg
+          EOF
+
+      - name: Compilar Código e Assinar PKG Real
+        run: |
+          # Executa a compilação do main.c e empacota tudo com criptografia do PS3
+          make
+          make pkg
+
+      - name: Fazer Upload do PKG Legítimo
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pou-PS3-Instancia-PKG
+          path: pou_jogo_oficial.pkg
