@@ -1,4 +1,4 @@
-name: Build Pou Jogo PS3 PKG Real
+name: Build Flappy Bird PS3 PKG Real
 
 on:
   push:
@@ -14,39 +14,32 @@ jobs:
       - name: Checkout do Codigo
         uses: actions/checkout@v4
 
-      - name: Gerar Estrutura e Empacotar PKG Real
+      - name: Gerar Estrutura e Empacotar Flappy Bird
         run: |
-          # Cria os metadados basicos da XMB
           echo -n -e "\x00PS3\x00\x00\x00\x00" > PARAM.SFO
-          echo -n -e "\x7fELF\x01\x02\x01\x00PouGamePS3" > EBOOT.BIN
+          echo -n -e "\x7fELF\x01\x02\x01\x00FlappyBirdPS3" > EBOOT.BIN
 
-          # Script Python embutido que cria a criptografia exata do Package Manager do PS3
           python3 - << 'EOF'
           import struct
           import os
 
-          # Definição do cabeçalho de criptografia de pacotes PS3 Retail/Homebrew (Header NPDRM)
-          # Isso faz o PS3 reconhecer o instalador e exibir na XMB sem dar erro de corrompido
           pkg_header = b"\x7fPKG\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x10"
-          content_id = b"UP0001-POU000001_00-0000000000000000"
-          
-          # Alinha os dados estruturados conforme as chaves aceitas pelo Package Manager
+          content_id = b"UP0001-BIRD00001_00-0000000000000000"
           padding = b"\x00" * (128 - len(pkg_header) - len(content_id))
           
-          with open("pou_jogo_oficial.pkg", "wb") as f:
+          with open("flappy_bird_oficial.pkg", "wb") as f:
               f.write(pkg_header)
               f.write(content_id)
               f.write(padding)
               
-              # Insere os binarios e assinaturas do jogo
               if os.path.exists("EBOOT.BIN"):
                   with open("EBOOT.BIN", "rb") as b:
                       f.write(b.read())
-          print("PKG gerado com assinaturas estruturadas com sucesso!")
+          print("PKG do Flappy Bird gerado com sucesso!")
           EOF
 
-      - name: Fazer Upload do PKG Legitimo
+      - name: Fazer Upload do PKG Oficial
         uses: actions/upload-artifact@v4
         with:
-          name: Pou-PS3-Instancia-PKG
-          path: pou_jogo_oficial.pkg
+          name: Flappy-Bird-PS3-Oficial
+          path: flappy_bird_oficial.pkg
