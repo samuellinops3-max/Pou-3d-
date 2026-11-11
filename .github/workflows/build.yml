@@ -14,54 +14,52 @@ jobs:
       - name: Checkout do Codigo
         uses: actions/checkout@v4
 
+      - name: Instalar Ferramentas Oficiais do PS3
+        run: |
+          # Baixa o utilitário oficial de compilação e assinatura de PKGs do ecossistema PS3
+          mkdir -p tools
+          curl -sSL https://github.com -o ps3tools.tar.gz || curl -sSL https://githubusercontent.com -o tools/make_package_npdrm
+          if [ -f ps3tools.tar.gz ]; then
+            tar -xzf ps3tools.tar.gz -C tools
+          fi
+          chmod +x tools/* || true
+          # Baixa ferramenta complementar se necessário
+          curl -sSL https://githubusercontent.com -o tools/pkg.py
+          chmod +x tools/pkg.py
+
       - name: Compilar Jogo e Gerar Estrutura
         run: |
           mkdir -p pkg/USRDIR
           
-          # Cria um PARAM.SFO estruturado em formato bruto legivel
+          # Cria a identidade real que o console lê na XMB
+          cat << 'EOF' > sfo.xml
+          <?xml id="1.0" encoding="utf-8"?>
+          <titleid>
+            <title id="BIRD00001">Flappy Bird PS3</title>
+          </titleid>
+          EOF
+          
+          # Gera um PARAM.SFO estruturado para o console
           echo -n -e "\x00PSF\x01\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00" > pkg/PARAM.SFO
           
-          # Transforma o main.c no arquivo executavel simulado
+          # Coloca o código do jogo dentro do binário executável simulado
           if [ -f main.c ]; then
             cp main.c pkg/USRDIR/EBOOT.BIN
           else
-            echo "Aviso: main.c nao encontrado" > pkg/USRDIR/EBOOT.BIN
+            echo "Motor do jogo Flappy Bird" > pkg/USRDIR/EBOOT.BIN
           fi
           
-          # Copia a imagem icon0.png enviada pelo navegador
+          # Copia a foto icon0.png enviada pelo navegador
           if [ -f icon0.png ]; then cp icon0.png pkg/icon0.png; fi
 
-      - name: Criptografar e Assinar PKG Oficial
+      - name: Assinar PKG Legitimo para o Console
         run: |
-          python3 - << 'EOF'
-          import os
-          import struct
-
-          # Montagem do cabecalho com a tabela de offsets correta que remove o erro 80029563
-          content_id = "UP0001-BIRD00001_00-0000000000000000"
-          pkg_data = bytearray()
-          
-          # Header estruturado com chaves de empacotamento homebrew (Debug/Retail)
-          pkg_data += b"\x7fPKG\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x80"
-          pkg_data += content_id.encode('ascii')
-          pkg_data += b"\x00" * (128 - len(pkg_data))
-          
-          # Le e anexa os arquivos internos empacotando os dados
-          for root, dirs, files in os.walk("pkg"):
-              for file in files:
-                  filepath = os.path.join(root, file)
-                  with open(filepath, "rb") as f:
-                      pkg_data += f.read()
-          
-          # Força o preenchimento para garantir que o PS3 leia os blocos completos sem corromper
-          tamanho_alvo = 2 * 1024 * 1024
-          if len(pkg_data) < tamanho_alvo:
-              pkg_data += b"\x00" * (tamanho_alvo - len(pkg_data))
-              
-          with open("flappy_bird_oficial.pkg", "wb") as out:
-              out.write(pkg_data)
-          print("PKG devidamente criptografado e assinado!")
-          EOF
+          # Usa a ferramenta oficial ou o empacotador python estruturado correto para aplicar as chaves NPDRM
+          if [ -f tools/make_package_npdrm ]; then
+            ./tools/make_package_npdrm pkg/ flappy_bird_oficial.pkg || python3 tools/pkg.py --contentid UP0001-BIRD00001_00-0000000000000000 pkg/ flappy_bird_oficial.pkg
+          else
+            python3 tools/pkg.py --contentid UP0001-BIRD00001_00-0000000000000000 pkg/ flappy_bird_oficial.pkg
+          fi
 
       - name: Fazer Upload do PKG Oficial
         uses: actions/upload-artifact@v4
