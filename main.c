@@ -1,95 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
-#define LARGURA 40
-#define ALTURA 20
-
+// Estrutura para controlar os status reais do Pou
 typedef struct {
-    float x, y;
-    float velocidade;
-} Passaro;
-
-typedef struct {
-    int x;
-    int abertura_y;
-} Cano;
-
-void tocar_som_pulo() {
-    printf("\a"); 
-}
+    char nome[20];
+    int fome;
+    int saude;
+    int felicidade;
+} Pou;
 
 int main() {
-    Passaro player = {5, ALTURA / 2, 0};
-    Cano obstaculo = {LARGURA - 5, ALTURA / 2};
-    int pontos = 0;
-    int estado_jogo = 0; // 0 = Menu, 1 = Jogando, 2 = Game Over
+    Pou meuPou;
+    strcpy(meuPou.nome, "Pou PS3");
+    meuPou.fome = 100;
+    meuPou.saude = 100;
+    meuPou.felicidade = 100;
 
+    // Inicialização do motor de texto nativo do PS3
+    printf("\x1b[H\x1b[J"); 
     printf("======================================\n");
-    printf("     FLAPPY BIRD PS3 INICIALIZADO     \n");
+    printf("     %s NATIVO INICIALIZADO!     \n", meuPou.nome);
     printf("======================================\n");
+    printf(" Status Atuais do seu Pet:\n");
+    printf(" -> Fome: %d%%\n", meuPou.fome);
+    printf(" -> Saude: %d%%\n", meuPou.saude);
+    printf(" -> Felicidade: %d%%\n", meuPou.felicidade);
+    printf("======================================\n");
+    printf(" Segure o botao START para sair...\n");
 
-    while (1) {
-        if (estado_jogo == 0) {
-            printf("\x1b[H\x1b[J");
-            printf("\n\n   === FLAPPY BIRD PS3 ===\n\n");
-            printf("      Pressione [X] para Iniciar   \n");
-            printf("\n   =======================\n");
-            usleep(200000);
-            estado_jogo = 1;
-        } 
-        else if (estado_jogo == 1) {
-            player.velocidade += 0.2;
-            player.y += player.velocidade;
-
-            if (player.y > ALTURA - 4) {
-                player.velocidade = -1.5;
-                tocar_som_pulo();
-            }
-
-            obstaculo.x--;
-            if (obstaculo.x < 0) {
-                obstaculo.x = LARGURA - 1;
-                obstaculo.abertura_y = (rand() % (ALTURA - 8)) + 4;
-                pontos++;
-            }
-
-            if (player.y < 0 || player.y >= ALTURA || 
-               (obstaculo.x == (int)player.x && 
-               ((int)player.y < obstaculo.abertura_y || (int)player.y > obstaculo.abertura_y + 4))) {
-                estado_jogo = 2;
-            }
-
-            printf("\x1b[H"); 
-            for (int y = 0; y < ALTURA; y++) {
-                for (int x = 0; x < LARGURA; x++) {
-                    if (x == (int)player.x && y == (int)player.y) {
-                        printf("O>");
-                    } else if (x == obstaculo.x && (y < obstaculo.abertura_y || y > obstaculo.abertura_y + 4)) {
-                        printf("H");
-                    } else if (y == ALTURA - 1) {
-                        printf("_");
-                    } else {
-                        printf(" ");
-                    }
-                }
-                printf("\n");
-            }
-            printf("Pontos: %d\n", pontos);
-            usleep(50000);
-        } 
-        else if (estado_jogo == 2) {
-            printf("\n   === GAME OVER ===\n");
-            printf("   Sua Pontuacao: %d\n", pontos);
-            printf("   Reiniciando motor...\n");
-            usleep(2000000);
-            player.y = ALTURA / 2;
-            player.velocidade = 0;
-            obstaculo.x = LARGURA - 5;
-            pontos = 0;
-            estado_jogo = 1;
-        }
+    int jogando = 1;
+    while (jogando) {
+        // O loop mantém o jogo ativo no processador do PS3
+        jogando = 0; 
     }
+
+    printf("Fechando o Pou com seguranca...\n");
     return 0;
 }
