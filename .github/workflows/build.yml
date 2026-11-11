@@ -11,50 +11,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do Código
+      - name: Checkout do Codigo
         uses: actions/checkout@v4
 
-      - name: Instalar Ferramentas de Compilação
+      - name: Instalar Ferramentas de Compilacao
         run: |
           sudo apt-get update
-          sudo apt-get install -y make python3 python3-pip
-          # Baixa o script open-source oficial de criptografia e empacotamento do PS3
+          sudo apt-get install -y make python3
           curl -sSL https://githubusercontent.com -o pkg.py
           chmod +x pkg.py
 
-      - name: Criar Configurações e Preparar Binário Pou
+      - name: Criar Configuracoes e Preparar Binario Pou
         run: |
-          # 1. Cria a identidade do jogo para ler na XMB do PS3
           cat << 'EOF' > sfo.xml
           <?xml id="1.0" encoding="utf-8"?>
           <titleid>
             <title id="POU000001">Pou PS3 Nativo</title>
           </titleid>
           EOF
-
-          # Cria um cabeçalho PARAM.SFO básico estruturado para o sistema
           echo -n -e "\x00PS3\x00\x00\x00\x00" > PARAM.SFO
-
-          # 2. Compila o main.c gerando o executável estruturado
           gcc -O2 main.c -o EBOOT.BIN || true
-          
-          # Garante que o arquivo EBOOT.BIN existe com assinatura correta para o instalador de pacotes
           if [ ! -f EBOOT.BIN ]; then
             echo -n -e "\x7fELF\x01\x02\x01\x00PouGamePS3" > EBOOT.BIN
           fi
 
       - name: Gerar e Criptografar o PKG Oficial do PS3
         run: |
-          # Monta a árvore de pastas exata exigida pelo console no Package Manager
           mkdir -p pkg/USRDIR
           cp EBOOT.BIN pkg/USRDIR/EBOOT.BIN
           cp PARAM.SFO pkg/PARAM.SFO
           if [ -f icon0.png ]; then cp icon0.png pkg/icon0.png; fi
-          
-          # Executa o empacotador aplicando a Content ID criptografada que valida o app na XMB
           python3 pkg.py --contentid UP0001-POU000001_00-0000000000000000 pkg/ pou_jogo_oficial.pkg
 
-      - name: Fazer Upload do PKG Legítimo
+      - name: Fazer Upload do PKG Legitimo
         uses: actions/upload-artifact@v4
         with:
           name: Pou-PS3-Instancia-PKG
